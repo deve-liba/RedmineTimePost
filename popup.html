@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Redmine Time Entry Manager</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Redmine Time Entry Manager</h1>
+
+    <div class="upload-section">
+      <h2>TSVファイルをアップロード</h2>
+      <input type="file" id="tsvFile" accept=".tsv">
+    </div>
+
+    <div class="environment-section">
+      <h2>Redmine環境を選択</h2>
+      <div class="environment-control">
+        <select id="redmineEnvironment">
+          <option value="">選択してください</option>
+        </select>
+        <button id="reloadEnvironments" title="環境リストを再読み込み">🔄</button>
+      </div>
+    </div>
+
+    <div class="progress-section" hidden>
+      <h2>進捗状況</h2>
+      <div id="progressBar">
+        <div id="progressIndicator"></div>
+      </div>
+      <p id="progressText">0%</p>
+    </div>
+
+    <div class="button-section">
+      <button id="uploadButton" disabled>時間を計上</button>
+      <button id="downloadButton" disabled>結果をダウンロード</button>
+    </div>
+
+    <div class="status-section">
+      <p id="statusMessage"></p>
+    </div>
+
+    <div class="links-section">
+      <a href="options.html" target="_blank">環境設定</a>
+    </div>
+  </div>
+  <script src="js/popup.js"></script>
+</body>
+</html>

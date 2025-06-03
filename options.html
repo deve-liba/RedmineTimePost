@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Redmine Time Entry Manager - 設定</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Redmine環境設定</h1>
+
+    <div class="environments-section">
+      <h2>登録済み環境</h2>
+      <ul id="environmentsList">
+        <!-- 環境リストがここに挿入されます -->
+      </ul>
+    </div>
+
+    <div class="add-environment-section">
+      <h2>新しい環境を追加</h2>
+      <form id="addEnvironmentForm">
+        <div class="form-group">
+          <label for="environmentName">環境名:</label>
+          <input type="text" id="environmentName" required>
+        </div>
+        <div class="form-group">
+          <label for="redmineUrl">Redmine URL:</label>
+          <input type="url" id="redmineUrl" placeholder="https://redmine.example.com" required>
+        </div>
+        <div class="form-group">
+          <label for="apiKey">APIキー (オプション):</label>
+          <input type="text" id="apiKey">
+          <small>※APIを使用する場合にのみ必要です</small>
+        </div>
+        <button type="submit">追加</button>
+      </form>
+    </div>
+
+    <div class="status-section">
+      <p id="statusMessage"></p>
+    </div>
+  </div>
+  <script src="js/options.js"></script>
+</body>
+</html>
