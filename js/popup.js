@@ -399,7 +399,7 @@ function createTimeEntryInBrowser(entry, tabId) {
                                         const form = document.getElementById('new_time_entry') || 
                                                     document.querySelector('form.new_time_entry') || 
                                                     document.querySelector('form[action*="time_entries"]');
-                                        
+
                                         if (!form) {
                                             console.error('時間記録フォームが見つかりません');
                                             return {success: false, error: '時間記録フォームが見つかりません'};
@@ -421,7 +421,7 @@ function createTimeEntryInBrowser(entry, tabId) {
                                         if (issueField) {
                                             issueField.value = issueId;
                                             console.log('チケットID設定:', issueId);
-                                            
+
                                             // チェンジイベントを発火
                                             const issueInputEvent = new Event('input', {bubbles: true});
                                             issueField.dispatchEvent(issueInputEvent);
@@ -444,86 +444,300 @@ function createTimeEntryInBrowser(entry, tabId) {
                                         const userField = document.getElementById('time_entry_user_id');
                                         if (userField) {
                                             let userSet = false;
-                                            
-                                            console.log('ユーザー選択肢:', Array.from(userField.options).map(opt => 
+
+                                            console.log('ユーザー選択肢:', Array.from(userField.options).map(opt =>
                                                 `${opt.value}: ${opt.textContent.trim()}`
                                             ));
-                                            
-                                            // IDまたは名前で検索
-                                            if (!isNaN(parseInt(userIdOrName))) {
-                                                // 数値IDの場合
-                                                const userId = parseInt(userIdOrName);
-                                                const userOption = Array.from(userField.options).find(option => parseInt(option.value) === userId);
-                                                if (userOption) {
-                                                    userField.value = userOption.value;
+
+                                            // 「自分」を最初に試す
+                                            if (userIdOrName === '自分' || userIdOrName.includes('自分')) {
+                                                const myselfOption = Array.from(userField.options).find(option =>
+                                                    option.textContent.includes('自分'));
+                                                if (myselfOption) {
+                                                    userField.value = myselfOption.value;
                                                     userSet = true;
-                                                    console.log('ユーザー設定（ID）:', userOption.value, userOption.textContent.trim());
-                                                }
-                                            } else {
-                                                // 名前の場合
-                                                const userOption = Array.from(userField.options).find(option => {
-                                                    const optionText = option.textContent.trim();
-                                                    return optionText === userIdOrName || 
-                                                           optionText.includes(userIdOrName) ||
-                                                           userIdOrName.includes(optionText.replace(/[<>]/g, '').trim()) ||
-                                                           (userIdOrName === '自分' && optionText.includes('自分'));
-                                                });
-                                                if (userOption) {
-                                                    userField.value = userOption.value;
-                                                    userSet = true;
-                                                    console.log('ユーザー設定（名前）:', userOption.value, userOption.textContent.trim());
+                                                    console.log('ユーザー設定（自分）:', myselfOption.value, myselfOption.textContent.trim());
                                                 }
                                             }
-                                            
+
+                                            // IDまたは名前で検索（「自分」で設定されていない場合）
                                             if (!userSet) {
-                                                console.warn(`ユーザー「${userIdOrName}」が見つかりませんでした`);
+                                                if (!isNaN(parseInt(userIdOrName))) {
+                                                    // 数値IDの場合
+                                                    const userId = parseInt(userIdOrName);
+                                                    const userOption = Array.from(userField.options).find(option => parseInt(option.value) === userId);
+                                                    if (userOption) {
+                                                        userField.value = userOption.value;
+                                                        userSet = true;
+                                                        console.log('ユーザー設定（ID）:', userOption.value, userOption.textContent.trim());
+                                                    }
+                                                } else {
+                                                    // 名前の場合
+                                                    const userOption = Array.from(userField.options).find(option => {
+                                                        const optionText = option.textContent.trim();
+                                                        return optionText === userIdOrName ||
+                                                               optionText.includes(userIdOrName) ||
+                                                               userIdOrName.includes(optionText.replace(/[<>]/g, '').trim());
+                                                    });
+                                                    if (userOption) {
+                                                        userField.value = userOption.value;
+                                                        userSet = true;
+                                                        console.log('ユーザー設定（名前）:', userOption.value, userOption.textContent.trim());
+                                                    }
+                                                }
+                                            }
+
+                                            // ユーザーが見つからない場合は最初のオプションを使用
+                                            if (!userSet && userField.options.length > 0) {
+                                                userField.value = userField.options[0].value;
+                                                userSet = true;
+                                                console.log('ユーザー設定（デフォルト）:', userField.options[0].value, userField.options[0].textContent.trim());
+                                            }
+
+                                            // jQuery Select2が利用可能な場合はSelect2を正しく更新
+                                            if (window.jQuery && window.jQuery().select2) {
+                                                const $userField = window.jQuery(userField);
+                                                try {
+                                                    // 既存のSelect2を破棄して再初期化
+                                                    $userField.select2('destroy');
+                                                } catch (e) {
+                                                    console.log('Select2破棄中のエラー（無視可）:', e.message);
+                                                }
+
+                                                // 新しいSelect2を初期化
+                                                $userField.select2();
+
+                                                // 値を設定し、明示的にSelect2イベントを発火
+                                                $userField.val(userField.value).trigger('change.select2');
+                                                console.log('Select2更新後のユーザー値:', $userField.val());
                                             }
                                         }
 
-                                        // 5. 作業分類フィールド
+                                        // 5. 作業分類フィールド（修正版）
                                         const activityField = document.getElementById('time_entry_activity_id');
                                         if (activityField) {
                                             let activitySet = false;
-                                            
-                                            console.log('作業分類選択肢:', Array.from(activityField.options).map(opt => 
+
+                                            console.log('作業分類選択肢:', Array.from(activityField.options).map(opt =>
                                                 `${opt.value}: ${opt.textContent.trim()}`
                                             ));
-                                            
-                                            if (!isNaN(parseInt(activityIdOrName))) {
-                                                // 数値IDの場合
-                                                const activityId = parseInt(activityIdOrName);
-                                                const activityOption = Array.from(activityField.options).find(option => parseInt(option.value) === activityId);
-                                                if (activityOption) {
-                                                    activityField.value = activityOption.value;
-                                                    activitySet = true;
-                                                    console.log('作業分類設定（ID）:', activityOption.value, activityOption.textContent.trim());
-                                                }
-                                            } else {
-                                                // 名前の場合
-                                                let activityOption = Array.from(activityField.options).find(option =>
-                                                    option.textContent.trim() === activityIdOrName
-                                                );
-                                                
-                                                if (!activityOption) {
-                                                    activityOption = Array.from(activityField.options).find(option =>
-                                                        option.textContent.includes(activityIdOrName) ||
-                                                        activityIdOrName.includes(option.textContent.trim())
-                                                    );
-                                                }
-                                                
-                                                if (activityOption) {
-                                                    activityField.value = activityOption.value;
-                                                    activitySet = true;
-                                                    console.log('作業分類設定（名前）:', activityOption.value, activityOption.textContent.trim());
+
+                                            // 名前で直接指定された作業分類を選択する処理
+                                            if (typeof activityIdOrName === 'string' && activityIdOrName.trim() !== '') {
+                                                // option要素をループして、テキストが指定された名前と一致するものを探す
+                                                for (var i = 0; i < activityField.options.length; i++) {
+                                                    var opt = activityField.options[i];
+                                                    if (opt.text.trim() === activityIdOrName.trim()) {
+                                                        // 該当オプションが見つかったら selected を true にする
+                                                        opt.selected = true;
+                                                        activityField.value = opt.value;
+                                                        activitySet = true;
+                                                        console.log('作業分類設定（テキスト完全一致）:', opt.value, opt.text.trim());
+
+                                                        // changeイベントを発火
+                                                        var event = new Event('change');
+                                                        activityField.dispatchEvent(event);
+                                                        break;
+                                                    }
                                                 }
                                             }
-                                            
+
+                                            // 既に名前で完全一致した場合は以降の処理をスキップ
+                                            if (!activitySet && activityIdOrName) {
+                                                console.log('指定された作業分類を検索:', activityIdOrName);
+
+                                                if (!isNaN(parseInt(activityIdOrName))) {
+                                                    // 数値IDの場合
+                                                    const activityId = parseInt(activityIdOrName);
+                                                    const activityOption = Array.from(activityField.options).find(option =>
+                                                        parseInt(option.value) === activityId
+                                                    );
+                                                    if (activityOption) {
+                                                        activityField.value = activityOption.value;
+                                                        activitySet = true;
+                                                        console.log('作業分類設定（ID）:', activityOption.value, activityOption.textContent.trim());
+                                                    }
+                                                } else {
+                                                    // 名前の場合 - 完全一致を優先
+                                                    let activityOption = Array.from(activityField.options).find(option =>
+                                                        option.textContent.trim().toLowerCase() === activityIdOrName.toLowerCase()
+                                                    );
+
+                                                    // 完全一致がなければ部分一致を試す
+                                                    if (!activityOption) {
+                                                        activityOption = Array.from(activityField.options).find(option =>
+                                                            option.textContent.trim().toLowerCase().includes(activityIdOrName.toLowerCase()) ||
+                                                            activityIdOrName.toLowerCase().includes(option.textContent.trim().toLowerCase())
+                                                        );
+                                                    }
+
+                                                    // 特定のキーワードでのマッピング
+                                                    if (!activityOption) {
+                                                        const keywordMap = {
+                                                            '開発': ['コーディング', 'プログラミング', '実装'],
+                                                            'コーディング': ['開発', 'プログラミング', '実装'],
+                                                            '設計': ['要件', '分析'],
+                                                            'テスト': ['検証', 'QA'],
+                                                            '管理': ['チーム管理', 'プロジェクト管理'],
+                                                            'バグ': ['修正', 'デバッグ', 'フィックス'],
+                                                            'レビュー': ['確認', 'チェック']
+                                                        };
+
+                                                        // キーワードマッピングに基づいて検索
+                                                        for (const [keyword, synonyms] of Object.entries(keywordMap)) {
+                                                            if (activityIdOrName.toLowerCase().includes(keyword.toLowerCase())) {
+                                                                // キーワードを含む作業分類を検索
+                                                                activityOption = Array.from(activityField.options).find(option =>
+                                                                    option.textContent.trim().toLowerCase().includes(keyword.toLowerCase())
+                                                                );
+                                                                if (activityOption) break;
+
+                                                                // 同義語も検索
+                                                                for (const synonym of synonyms) {
+                                                                    activityOption = Array.from(activityField.options).find(option =>
+                                                                        option.textContent.trim().toLowerCase().includes(synonym.toLowerCase())
+                                                                    );
+                                                                    if (activityOption) break;
+                                                                }
+                                                                if (activityOption) break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    if (activityOption) {
+                                                        activityField.value = activityOption.value;
+                                                        activitySet = true;
+                                                        console.log('作業分類設定（名前）:', activityOption.value, activityOption.textContent.trim());
+                                                    }
+                                                }
+                                            }
+
+                                            // 作業分類が設定されていない場合にのみデフォルト値を設定
+                                            if (!activitySet && activityField.options.length > 1) {
+                                                // 「選んでください」以外の最初の有効な値を選択
+                                                const firstValidOption = Array.from(activityField.options).find(option =>
+                                                    option.value !== '' && !option.textContent.includes('選んでください')
+                                                );
+                                                if (firstValidOption) {
+                                                    console.log('デフォルト作業分類設定:', firstValidOption.value, firstValidOption.textContent.trim());
+                                                    activityField.value = firstValidOption.value;
+                                                    activitySet = true;
+                                                }
+                                            }
+
                                             if (!activitySet) {
-                                                const availableOptions = Array.from(activityField.options).map(opt => 
+                                                // 作業分類が見つからなかった場合は警告を出すだけで、エラーにはしない
+                                                const availableOptions = Array.from(activityField.options).map(opt =>
                                                     `${opt.value}: ${opt.textContent.trim()}`
                                                 ).join(', ');
-                                                return {success: false, error: `作業分類「${activityIdOrName}」が見つかりません。利用可能: ${availableOptions}`};
+                                                console.warn(`作業分類「${activityIdOrName}」が見つかりません。最初の有効な値を使用します。利用可能: ${availableOptions}`);
+
+                                                // 最初の有効な値を設定
+                                                const firstValidOption = Array.from(activityField.options).find(option => option.value !== '');
+                                                if (firstValidOption) {
+                                                    activityField.value = firstValidOption.value;
+                                                    activitySet = true;
+                                                    console.log('フォールバック作業分類設定:', firstValidOption.value, firstValidOption.textContent.trim());
+                                                } else {
+                                                    return {success: false, error: `作業分類が設定できません。有効な選択肢がありません。`};
+                                                }
                                             }
+
+                                            // 選択した値を保持
+                                            const selectedActivityId = activityField.value;
+                                            console.log('最終的な作業分類ID:', selectedActivityId);
+
+                                            // select要素を直接更新
+                                            activityField.value = selectedActivityId;
+
+                                            // select要素を明示的に更新するイベントを発火
+                                            const nativeSelectEvent = new Event('change', {bubbles: true});
+                                            activityField.dispatchEvent(nativeSelectEvent);
+
+                                            // jQuery Select2を使った更新
+                                            if (window.jQuery && window.jQuery().select2) {
+                                                console.log('Select2による作業分類更新');
+                                                const $activityField = window.jQuery(activityField);
+
+                                                try {
+                                                    // 既存のSelect2を破棄して再初期化
+                                                    $activityField.select2('destroy');
+                                                } catch (e) {
+                                                    console.log('Select2破棄中のエラー（無視可）:', e.message);
+                                                }
+
+                                                // 全てのオプションを一度確認してログに出力
+                                                console.log('更新前の作業分類オプション状態:', Array.from(activityField.options).map(opt =>
+                                                    `${opt.value}: ${opt.textContent.trim()}, selected=${opt.selected}`
+                                                ));
+
+                                                // HTMLの選択状態をリセット
+                                                Array.from(activityField.options).forEach(option => {
+                                                    option.selected = false;
+                                                    option.removeAttribute('selected');
+                                                });
+
+                                                // 対象のオプションを選択状態に設定
+                                                const targetOption = Array.from(activityField.options).find(option => option.value === selectedActivityId);
+                                                if (targetOption) {
+                                                    targetOption.selected = true;
+                                                    targetOption.setAttribute('selected', 'selected');
+                                                    console.log('選択対象オプション:', targetOption.value, targetOption.textContent.trim());
+                                                }
+
+                                                // 選択状態を確認
+                                                activityField.value = selectedActivityId;
+
+                                                // 新しいSelect2を初期化
+                                                try {
+                                                    $activityField.select2();
+                                                } catch (e) {
+                                                    console.log('Select2初期化エラー（無視可）:', e.message);
+                                                }
+
+                                                // 値を設定し、changeイベントを発火（複数の方法で確実に設定）
+                                                try {
+                                                    // 複数の手法を試す
+                                                    $activityField.val(selectedActivityId);
+                                                    $activityField.trigger('change');
+
+                                                    // select2固有のトリガー
+                                                    $activityField.trigger('change.select2');
+
+                                                    // select2の値を直接設定する試み
+                                                    const select2Data = $activityField.select2('data');
+                                                    if (select2Data && select2Data[0]) {
+                                                        console.log('現在のselect2データ:', select2Data[0]);
+                                                    }
+                                                } catch (e) {
+                                                    console.log('Select2イベント発火エラー（無視可）:', e.message);
+                                                }
+
+                                                console.log('Select2更新後の値:', $activityField.val(), 'HTML値:', activityField.value);
+
+                                                // データ属性としても値を保存（送信前チェック用）
+                                                activityField.setAttribute('data-selected-value', selectedActivityId);
+
+                                                // 選択項目のテキストをSelect2の表示エリアに強制設定
+                                                setTimeout(() => {
+                                                    const selectedOption = activityField.options[activityField.selectedIndex];
+                                                    const select2Rendered = document.querySelector('#select2-time_entry_activity_id-container');
+                                                    if (select2Rendered && selectedOption) {
+                                                        select2Rendered.textContent = selectedOption.textContent;
+                                                        select2Rendered.title = selectedOption.textContent;
+                                                    }
+                                                }, 100);
+
+                                                // 非表示の場合は表示する
+                                                const select2Containers = document.querySelectorAll('.select2-container--default');
+                                                select2Containers.forEach(container => {
+                                                    if (container.style.display === 'none' || container.style.visibility === 'hidden') {
+                                                        container.style.display = 'block';
+                                                        container.style.visibility = 'visible';
+                                                    }
+                                                });
+                                            }
+
                                         } else {
                                             return {success: false, error: '作業分類フィールドが見つかりません'};
                                         }
@@ -535,19 +749,336 @@ function createTimeEntryInBrowser(entry, tabId) {
                                             console.log('コメント設定:', comments);
                                         }
 
-                                        // フォーム送信
+                                        // フォーム送信と結果判定
                                         setTimeout(() => {
                                             console.log('フォーム送信実行');
-                                            const submitButton = form.querySelector('input[type="submit"][name="commit"]') || 
-                                                               form.querySelector('input[type="submit"]') ||
-                                                               form.querySelector('button[type="submit"]');
-                                            
+
+                                            // 連続作成ボタンを優先的に探す
+                                            const continuousCreateButton = form.querySelector('input[type="submit"][name="continue"]') ||
+                                                                        form.querySelector('input[name="continue"]') ||
+                                                                        form.querySelector('button[name="continue"]') ||
+                                                                        Array.from(form.querySelectorAll('input[type="submit"], button[type="submit"]'))
+                                                                            .find(btn => btn.value === '連続作成' || btn.textContent.includes('連続作成'));
+
+                                            const normalSubmitButton = form.querySelector('input[type="submit"][name="commit"]') ||
+                                                                      form.querySelector('input[type="submit"]') ||
+                                                                      form.querySelector('button[type="submit"]');
+
+                                            // 送信ボタンの選択（連続作成優先）
+                                            const submitButton = continuousCreateButton || normalSubmitButton;
+
                                             if (submitButton) {
+                                                console.log('使用するボタン:', submitButton.name || submitButton.value || submitButton.textContent);
+
+                                                // 送信直前に作業分類を再確認・強制設定
+                                                const activityField = document.getElementById('time_entry_activity_id');
+                                                if (activityField && activityField.options.length > 0) {
+                                                    // 実際の作業分類IDを取得
+                                                    let finalActivityId = activityIdOrName; // TSVで指定された値
+
+                                                    console.log('送信前作業分類状態確認:', {
+                                                        '指定値': activityIdOrName,
+                                                        '現在の値': activityField.value,
+                                                        'オプション数': activityField.options.length,
+                                                        '選択インデックス': activityField.selectedIndex
+                                                    });
+
+                                                    // ①まず指定された作業分類IDを最優先で使用
+                                                    if (activityIdOrName) {
+                                                        // IDが数値の場合
+                                                        if (!isNaN(parseInt(activityIdOrName))) {
+                                                            const activityId = parseInt(activityIdOrName);
+                                                            const activityOption = Array.from(activityField.options).find(option =>
+                                                                parseInt(option.value) === activityId
+                                                            );
+
+                                                            if (activityOption) {
+                                                                finalActivityId = activityOption.value;
+                                                                console.log('送信前に指定ID作業分類を設定:', finalActivityId);
+                                                            }
+                                                        }
+                                                        // 名前の場合
+                                                        else {
+                                                            const activityOption = Array.from(activityField.options).find(option =>
+                                                                option.textContent.trim().toLowerCase().includes(activityIdOrName.toLowerCase())
+                                                            );
+
+                                                            if (activityOption) {
+                                                                finalActivityId = activityOption.value;
+                                                                console.log('送信前に指定名称作業分類を設定:', finalActivityId);
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // ②保存された値があればそれを使用
+                                                    const savedValue = activityField.getAttribute('data-selected-value');
+                                                    if (!finalActivityId && savedValue && savedValue !== '') {
+                                                        finalActivityId = savedValue;
+                                                        console.log('送信前に保存済み作業分類を設定:', finalActivityId);
+                                                    }
+
+                                                    // ③現在選択されている値があればそれを使用
+                                                    if (!finalActivityId && activityField.value && activityField.value !== '') {
+                                                        finalActivityId = activityField.value;
+                                                        console.log('送信前に現在選択作業分類を使用:', finalActivityId);
+                                                    }
+
+                                                    // ④どれも無ければ最初の有効なオプションを使用
+                                                    if (!finalActivityId || finalActivityId === '') {
+                                                        const firstValidOption = Array.from(activityField.options).find(opt =>
+                                                            opt.value !== '' && !opt.textContent.includes('選んでください')
+                                                        );
+
+                                                        if (firstValidOption) {
+                                                            finalActivityId = firstValidOption.value;
+                                                            console.log('送信前に最初の有効な作業分類を設定:', finalActivityId);
+                                                        }
+                                                    }
+
+                                                    // 最終的な作業分類IDを設定
+                                                    if (finalActivityId && finalActivityId !== '') {
+                                                        // 選択状態をリセット
+                                                        Array.from(activityField.options).forEach(option => {
+                                                            option.selected = false;
+                                                            option.removeAttribute('selected');
+                                                        });
+
+                                                        // 対象のオプションを選択
+                                                        const targetOption = Array.from(activityField.options).find(option =>
+                                                            option.value === finalActivityId.toString()
+                                                        );
+
+                                                        if (targetOption) {
+                                                            // HTMLレベルで選択状態を設定
+                                                            targetOption.selected = true;
+                                                            targetOption.setAttribute('selected', 'selected');
+
+                                                            // selectの値を設定
+                                                            activityField.value = finalActivityId;
+                                                            console.log('送信前の最終作業分類設定:', finalActivityId, targetOption.textContent.trim());
+
+                                                            // jQuery Select2も最終更新
+                                                            if (window.jQuery && window.jQuery().select2) {
+                                                                try {
+                                                                    const $activityField = window.jQuery(activityField);
+
+                                                                    // 既存のSelect2を再初期化
+                                                                    $activityField.select2('destroy').select2();
+
+                                                                    // 値をセットしてイベントを発火
+                                                                    $activityField.val(finalActivityId);
+                                                                    $activityField.trigger('change');
+                                                                    $activityField.trigger('change.select2');
+
+                                                                    // Select2表示も直接更新
+                                                                    setTimeout(() => {
+                                                                        const select2Rendered = document.querySelector('#select2-time_entry_activity_id-container');
+                                                                        if (select2Rendered && targetOption) {
+                                                                            select2Rendered.textContent = targetOption.textContent.trim();
+                                                                            select2Rendered.title = targetOption.textContent.trim();
+                                                                            console.log('Select2表示テキスト更新:', targetOption.textContent.trim());
+                                                                        }
+                                                                    }, 100);
+                                                                } catch (e) {
+                                                                    console.log('Select2最終更新エラー（無視可）:', e.message);
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+                                                // フォーム送信前の状態を記録
+                                                const originalUrl = window.location.href;
+
+                                                // 送信後の結果を監視する
+                                                const checkResult = () => {
+                                                    setTimeout(() => {
+                                                        // エラー表示の確認
+                                                        const errorElement = document.getElementById('errorExplanation');
+                                                        const flashError = document.querySelector('.flash.error');
+                                                        const flashNotice = document.querySelector('.flash.notice');
+                                                        const newTimeEntryForm = document.querySelector('form.new_time_entry') || document.getElementById('new_time_entry');
+                                                        const flashContent = flashNotice ? flashNotice.textContent.trim() : '';
+
+                                                        console.log('結果確認:', {
+                                                            url: window.location.href,
+                                                            hasError: !!errorElement,
+                                                            hasFlashError: !!flashError,
+                                                            hasFlashNotice: !!flashNotice,
+                                                            flashContent: flashContent,
+                                                            hasNewForm: !!newTimeEntryForm
+                                                        });
+
+                                                        // 確実に成功を判定
+                                                        if (flashNotice && (flashContent.includes('作成しました') || flashContent.includes('登録しました') || flashContent.includes('success'))) {
+                                                            // 成功メッセージがある場合（最優先）
+                                                            window.formSubmissionResult = {
+                                                                success: true,
+                                                                message: flashContent
+                                                            };
+                                                            console.log('成功メッセージを検出:', flashContent);
+                                                        } else if (errorElement && errorElement.style.display !== 'none') {
+                                                            // エラーメッセージがある場合
+                                                            const errorMessages = Array.from(errorElement.querySelectorAll('li')).map(li => li.textContent.trim());
+                                                            window.formSubmissionResult = {
+                                                                success: false,
+                                                                error: `入力エラー: ${errorMessages.join(', ')}`
+                                                            };
+                                                        } else if (flashError) {
+                                                            // フラッシュエラーメッセージがある場合
+                                                            window.formSubmissionResult = {
+                                                                success: false,
+                                                                error: `エラー: ${flashError.textContent.trim()}`
+                                                            };
+                                                        } else if (newTimeEntryForm && window.location.href.includes('/time_entries/new')) {
+                                                            // 連続作成で新しいフォームが表示された場合（チケットIDが空になっている）
+                                                            const issueField = document.getElementById('time_entry_issue_id');
+                                                            const isNewForm = !issueField || !issueField.value;
+
+                                                            if (isNewForm) {
+                                                                window.formSubmissionResult = {
+                                                                    success: true,
+                                                                    message: '時間エントリが登録され、連続作成モードになりました'
+                                                                };
+                                                            } else {
+                                                                // 再確認（まだページ遷移中の可能性）
+                                                                setTimeout(checkResult, 1000);
+                                                                return;
+                                                            }
+                                                        } else if (window.location.href !== originalUrl && window.location.href.includes('/time_entries')) {
+                                                            // URLが変わって時間エントリページに移動した場合は成功
+                                                            window.formSubmissionResult = {
+                                                                success: true,
+                                                                message: '時間エントリが正常に登録されました'
+                                                            };
+                                                        } else {
+                                                            // その他の場合は再確認（10回まで）
+                                                            window.checkResultAttempts = (window.checkResultAttempts || 0) + 1;
+                                                            if (window.checkResultAttempts < 10) {
+                                                                setTimeout(checkResult, 1000);
+                                                                return;
+                                                            } else {
+                                                                // 最大試行回数を超えた場合、HTML全体をチェック
+                                                                if (document.body.innerHTML.includes('作成しました') ||
+                                                                    document.body.innerHTML.includes('登録しました')) {
+                                                                    window.formSubmissionResult = {
+                                                                        success: true,
+                                                                        message: 'ページ内容から成功を検出しました'
+                                                                    };
+                                                                } else {
+                                                                    window.formSubmissionResult = {
+                                                                        success: false,
+                                                                        error: '結果を確認できませんでした（タイムアウト）'
+                                                                    };
+                                                                }
+                                                            }
+                                                        }
+
+                                                        console.log('最終結果:', window.formSubmissionResult);
+                                                    }, 2000); // 2秒後に結果確認
+                                                };
+
+                                                // フォーム送信
                                                 submitButton.click();
+                                                checkResult();
+
                                             } else {
+                                                // 送信直前に作業分類を再確認・強制設定
+                                                const activityField = document.getElementById('time_entry_activity_id');
+                                                if (activityField && activityField.options.length > 0) {
+                                                    // 実際の作業分類IDを取得
+                                                    let finalActivityId = activityIdOrName; // TSVで指定された値
+
+                                                    console.log('送信前作業分類状態確認(form.submit):', {
+                                                        '指定値': activityIdOrName,
+                                                        '現在の値': activityField.value,
+                                                        'オプション数': activityField.options.length,
+                                                        '選択インデックス': activityField.selectedIndex
+                                                    });
+
+                                                    // ①まず指定された作業分類IDを最優先で使用
+                                                    if (activityIdOrName) {
+                                                        // IDが数値の場合
+                                                        if (!isNaN(parseInt(activityIdOrName))) {
+                                                            const activityId = parseInt(activityIdOrName);
+                                                            const activityOption = Array.from(activityField.options).find(option =>
+                                                                parseInt(option.value) === activityId
+                                                            );
+
+                                                            if (activityOption) {
+                                                                finalActivityId = activityOption.value;
+                                                                console.log('送信前に指定ID作業分類を設定:', finalActivityId);
+                                                            }
+                                                        }
+                                                        // 名前の場合
+                                                        else {
+                                                            const activityOption = Array.from(activityField.options).find(option =>
+                                                                option.textContent.trim().toLowerCase().includes(activityIdOrName.toLowerCase())
+                                                            );
+
+                                                            if (activityOption) {
+                                                                finalActivityId = activityOption.value;
+                                                                console.log('送信前に指定名称作業分類を設定:', finalActivityId);
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // 作業分類が見つからなければ最初の有効な値を使用
+                                                    if (!finalActivityId || finalActivityId === '') {
+                                                        const firstValidOption = Array.from(activityField.options).find(opt =>
+                                                            opt.value !== '' && !opt.textContent.includes('選んでください')
+                                                        );
+
+                                                        if (firstValidOption) {
+                                                            finalActivityId = firstValidOption.value;
+                                                            console.log('送信前に最初の有効な作業分類を設定:', finalActivityId);
+                                                        }
+                                                    }
+
+                                                    // 最終的な作業分類IDを設定
+                                                    if (finalActivityId && finalActivityId !== '') {
+                                                        // HTMLレベルで選択状態を設定
+                                                        activityField.value = finalActivityId;
+
+                                                        // jQuery Select2も最終更新
+                                                        if (window.jQuery && window.jQuery().select2) {
+                                                            try {
+                                                                const $activityField = window.jQuery(activityField);
+                                                                $activityField.val(finalActivityId).trigger('change');
+                                                            } catch (e) {
+                                                                console.log('Select2最終更新エラー（無視可）:', e.message);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+                                                // 連続作成パラメータを追加
+                                                const continueInput = document.createElement('input');
+                                                continueInput.type = 'hidden';
+                                                continueInput.name = 'continue';
+                                                continueInput.value = '1';
+                                                form.appendChild(continueInput);
+
+                                                console.log('連続作成パラメータを追加してフォーム送信');
                                                 form.submit();
+                                                // 同様の結果監視ロジック
+                                                setTimeout(() => {
+                                                    const errorElement = document.getElementById('errorExplanation');
+                                                    if (errorElement && errorElement.style.display !== 'none') {
+                                                        const errorMessages = Array.from(errorElement.querySelectorAll('li')).map(li => li.textContent.trim());
+                                                        window.formSubmissionResult = {
+                                                            success: false,
+                                                            error: `入力エラー: ${errorMessages.join(', ')}`
+                                                        };
+                                                    } else {
+                                                        window.formSubmissionResult = {
+                                                            success: true,
+                                                            message: '時間エントリが登録されました（送信確認）'
+                                                        };
+                                                    }
+                                                }, 3000);
                                             }
-                                        }, 1000);
+                                        }, 1500); // 少し長めに待機
 
                                         return {success: true, message: 'フォーム入力完了、送信中...'};
 
@@ -565,14 +1096,39 @@ function createTimeEntryInBrowser(entry, tabId) {
                                     });
                                     return;
                                 }
-                                
+
                                 if (results && results[0] && results[0].result) {
                                     const result = results[0].result;
-                                    resolve({
-                                        success: result.success,
-                                        message: result.message || '時間エントリを登録しました',
-                                        error: result.error
-                                    });
+
+                                    // フォーム送信が開始された場合、結果を待つ
+                                    if (result.success) {
+                                        setTimeout(() => {
+                                            // 送信結果を確認
+                                            chrome.scripting.executeScript({
+                                                target: {tabId: tabId},
+                                                func: function() {
+                                                    return window.formSubmissionResult || {
+                                                        success: false,
+                                                        error: '送信結果の確認ができませんでした'
+                                                    };
+                                                }
+                                            }, function(resultResults) {
+                                                if (resultResults && resultResults[0] && resultResults[0].result) {
+                                                    resolve(resultResults[0].result);
+                                                } else {
+                                                    resolve({
+                                                        success: false,
+                                                        error: '送信結果の取得に失敗しました'
+                                                    });
+                                                }
+                                            });
+                                        }, 5000); // 5秒後に結果確認
+                                    } else {
+                                        resolve({
+                                            success: result.success,
+                                            error: result.error
+                                        });
+                                    }
                                 } else {
                                     resolve({
                                         success: false,
