@@ -367,7 +367,10 @@ function createTimeEntryInBrowser(entry, tabId) {
             const projectId = entry['プロジェクトID'];
             const issueId = parseInt(entry['チケットID']);
             const spentOn = entry['日付'];
-            const hours = parseFloat(entry['時間']);
+            // 時間フィールド
+            const hours = entry['時間'].includes(':') ?
+                parseFloat(entry['時間'].split(':')[0]) + parseFloat(entry['時間'].split(':')[1]) / 60 :
+                parseFloat(entry['時間']);
             const userId = entry['担当者'];
             const activityId = entry['作業分類'];
             const comments = entry['コメント'] || '';
