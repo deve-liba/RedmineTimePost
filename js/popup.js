@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
+    // バージョン情報を表示
+    displayAppVersion('versionInfo');
+
     // DOM要素
     const tsvFileInput = document.getElementById('tsvFile');
     const redmineEnvironmentSelect = document.getElementById('redmineEnvironment');

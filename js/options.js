@@ -1,4 +1,10 @@
 document.addEventListener('DOMContentLoaded', function() {
+  // バージョン情報を表示
+  displayAppVersion('versionInfo');
+
+  // バージョン履歴を表示
+  displayVersionHistory();
+
   // DOM要素
   const environmentsList = document.getElementById('environmentsList');
   const addEnvironmentForm = document.getElementById('addEnvironmentForm');
@@ -6,6 +12,33 @@ document.addEventListener('DOMContentLoaded', function() {
   const redmineUrlInput = document.getElementById('redmineUrl');
   const apiKeyInput = document.getElementById('apiKey');
   const statusMessage = document.getElementById('statusMessage');
+
+  // バージョン履歴表示関数
+  function displayVersionHistory() {
+    const versionHistoryElement = document.getElementById('versionHistory');
+    if (!versionHistoryElement) return;
+
+    const history = getVersionHistory();
+    let historyHTML = '<ul class="version-list">';
+
+    history.forEach(version => {
+      historyHTML += `<li>
+        <div class="version-header">
+          <strong>v${version.version}</strong> <span class="version-date">(${version.date})</span>
+        </div>
+        <ul class="changes-list">`;
+
+      version.changes.forEach(change => {
+        historyHTML += `<li>${change}</li>`;
+      });
+
+      historyHTML += `</ul>
+      </li>`;
+    });
+
+    historyHTML += '</ul>';
+    versionHistoryElement.innerHTML = historyHTML;
+  }
 
   // 保存された環境を読み込む
   loadEnvironments();
