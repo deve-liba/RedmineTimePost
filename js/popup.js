@@ -505,12 +505,20 @@ function createTimeEntryInBrowser(entry, tabId) {
                                                     }
                                                 } else {
                                                     // 名前の場合
-                                                    const userOption = Array.from(userField.options).find(option => {
+                                                    // まず完全一致で検索
+                                                    let userOption = Array.from(userField.options).find(option => {
                                                         const optionText = option.textContent.trim();
-                                                        return optionText === userIdOrName ||
-                                                               optionText.includes(userIdOrName) ||
-                                                               userIdOrName.includes(optionText.replace(/[<>]/g, '').trim());
+                                                        return optionText === userIdOrName;
                                                     });
+
+                                                    // 完全一致で見つからなかった場合のみ部分一致を試す
+                                                    if (!userOption) {
+                                                        userOption = Array.from(userField.options).find(option => {
+                                                            const optionText = option.textContent.trim();
+                                                            return optionText.includes(userIdOrName) ||
+                                                                   userIdOrName.includes(optionText.replace(/[<>]/g, '').trim());
+                                                        });
+                                                    }
                                                     if (userOption) {
                                                         userField.value = userOption.value;
                                                         userSet = true;
