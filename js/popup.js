@@ -162,9 +162,11 @@ document.addEventListener('DOMContentLoaded', function () {
                         throw new Error(`行 ${i + 1} の日付フォーマットが正しくありません。YYYY-MM-DD形式にしてください。`);
                     }
 
-                    // チケットIDが数値か確認
-                    if (isNaN(parseInt(entry['チケットID']))) {
-                        throw new Error(`行 ${i + 1} のチケットIDが数値ではありません。`);
+                    // チケットIDが数値または数値+タイトルか確認
+                    // 「100 バックエンド開発」のような形式も許容
+                    const ticketIdMatch = entry['チケットID'].match(/^(\d+)(?:[\s　].+)?$/);
+                    if (!ticketIdMatch) {
+                        throw new Error(`行 ${i + 1} のチケットIDが正しい形式ではありません。数値または「数値 タイトル」形式にしてください。`);
                     }
 
                     // 時間が数値か確認
@@ -365,7 +367,20 @@ function createTimeEntryInBrowser(entry, tabId) {
 
             // エントリからデータを取得と検証
             const projectId = entry['プロジェクトID'];
-            const issueId = parseInt(entry['チケットID']);
+
+            // チケットIDが「100 バックエンド開発」のような形式の場合、数値部分のみを抽出
+            let issueId;
+            if (typeof entry['チケットID'] === 'string') {
+                const match = entry['チケットID'].match(/^(\d+)(?:[\s　].+)?$/);
+                if (match) {
+                    issueId = parseInt(match[1]); // 数値部分のみを取得
+                } else {
+                    issueId = parseInt(entry['チケットID']);
+                }
+            } else {
+                issueId = parseInt(entry['チケットID']);
+            }
+
             const spentOn = entry['日付'];
             // 時間フィールド
             const hours = entry['時間'];
@@ -451,8 +466,16 @@ function createTimeEntryInBrowser(entry, tabId) {
                                         // 2. チケットIDフィールド
                                         const issueField = document.getElementById('time_entry_issue_id');
                                         if (issueField) {
-                                            issueField.value = issueId;
-                                            console.log('チケットID設定:', issueId);
+                                            // チケットIDが「100 バックエンド開発」のような形式の場合、数値部分のみを抽出
+                                            let cleanIssueId = issueId;
+                                            if (typeof issueId === 'string') {
+                                                const match = issueId.match(/^(\d+)(?:[\s　].+)?$/);
+                                                if (match) {
+                                                    cleanIssueId = match[1]; // 数値部分のみを取得
+                                                }
+                                            }
+                                            issueField.value = cleanIssueId;
+                                            console.log('チケットID設定:', cleanIssueId, '(元の値:', issueId, ')');
 
                                             // チェンジイベントを発火
                                             const issueInputEvent = new Event('input', {bubbles: true});
