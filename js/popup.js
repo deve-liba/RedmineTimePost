@@ -368,15 +368,13 @@ function createTimeEntryInBrowser(entry, tabId) {
             const issueId = parseInt(entry['チケットID']);
             const spentOn = entry['日付'];
             // 時間フィールド
-            const hours = entry['時間'].includes(':') ?
-                parseFloat(entry['時間'].split(':')[0]) + parseFloat(entry['時間'].split(':')[1]) / 60 :
-                parseFloat(entry['時間']);
+            const hours = entry['時間'];
             const userId = entry['担当者'];
             const activityId = entry['作業分類'];
             const comments = entry['コメント'] || '';
 
             // 必須フィールドの検証
-            if (!projectId || isNaN(issueId) || !spentOn || isNaN(hours) || !userId || !activityId) {
+            if (!projectId || isNaN(issueId) || !spentOn || !hours || !userId || !activityId) {
                 resolve({
                     success: false,
                     error: '必須フィールドが不足しています'
