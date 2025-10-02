@@ -1,5 +1,5 @@
 // バージョン情報を管理するファイル
-const APP_VERSION = '1.0.1';
+const APP_VERSION = '1.0.2';
 
 // バージョン情報を取得する関数
 function getAppVersion() {
@@ -16,6 +16,15 @@ function displayAppVersion(elementId) {
 
 // バージョン履歴
 const VERSION_HISTORY = [
+    {
+        version: '1.0.2',
+        date: '2025-10-02',
+        changes: [
+            'TSVファイルにコメント列を追加（作業分類の右隣に指定可能）',
+            'コメント列は省略可能に対応',
+            'CRLF改行コード対応（LFとCRLFの両方に対応）'
+        ]
+    },
     {
         version: '1.0.1',
         date: '2025-06-04',

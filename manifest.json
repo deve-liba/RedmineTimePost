@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Redmine Time Entry Manager",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "複数のRedmine環境で時間計上を自動化する拡張機能",
   "permissions": ["storage", "activeTab", "tabs", "downloads", "scripting"],
   "host_permissions": ["<all_urls>"],

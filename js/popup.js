@@ -118,7 +118,8 @@ document.addEventListener('DOMContentLoaded', function () {
         reader.onload = function (e) {
             try {
                 const content = e.target.result;
-                const lines = content.split('\n').filter(line => line.trim());
+                // CRLF(\r\n)とLF(\n)の両方に対応するため、行末の\rを削除
+                const lines = content.replace(/\r/g, '').split('\n').filter(line => line.trim());
 
                 // ヘッダー行があるか確認
                 if (lines.length < 2) {
@@ -127,7 +128,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // ヘッダー行を解析
                 const headers = lines[0].split('\t');
-                const requiredFields = ['プロジェクトID', '日付', 'チケットID', '担当者', '時間', '作業分類'];
+                const requiredFields = ['プロジェクトID', '日付', 'チケットID', '担当者', '時間', '作業分類', 'コメント'];
 
                 // 必須フィールドが存在するか確認
                 for (const field of requiredFields) {
@@ -142,8 +143,19 @@ document.addEventListener('DOMContentLoaded', function () {
                     const values = lines[i].split('\t');
 
                     // 値の数がヘッダーの数と一致するか確認
+                    // コメント列(7列目)は省略可能なので、最低6列、最大7列を許容
+                    if (values.length < 6 || values.length > 7) {
+                        throw new Error(`行 ${i + 1} の値の数が正しくありません（6列または7列である必要があります）`);
+                    }
+                    
+                    // ヘッダーが7列目を持っているかどうかチェック
                     if (values.length !== headers.length) {
-                        throw new Error(`行 ${i + 1} の値の数がヘッダーと一致しません`);
+                        // 7列目（コメント）が省略されている場合は空文字を追加
+                        if (headers.length === 7 && values.length === 6) {
+                            values.push('');
+                        } else {
+                            throw new Error(`行 ${i + 1} の値の数がヘッダーと一致しません`);
+                        }
                     }
 
                     const entry = {};
